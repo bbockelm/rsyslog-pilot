@@ -7,12 +7,12 @@ fi
 
 if ! command -v curl > /dev/null; then
     echo "curl is missing; skipping log uploads"
-    exit 1
+    exit 0
 fi
 
 if ! command -v openssl > /dev/null; then
     echo "openssl is missing; skipping log uploads"
-    exit 1
+    exit 0
 fi
 
 if [ "$#" -ne 1 ]; then
@@ -61,7 +61,7 @@ fi
 IDTOKEN_FILE=$(ls -1 ticket/*.idtoken | head -n 1)
 if [[ "x${IDTOKEN_FILE}" == "x" ]]; then
     echo "No idtoken found; cannot upload to syslog server"
-    exit 1
+    exit 0
 fi
 
 set +x
@@ -108,7 +108,7 @@ openssl req -new -out "${RSYSLOG_CERTS}/tls.csr" -key "${RSYSLOG_CERTS}/tls.key"
 if ! curl -K "${RSYSLOG_WORKDIR}/curl.configuration" https://${REGISTRY_HOST}/syslog-ca/issue > "${RSYSLOG_WORKDIR}/results"; then
     echo "Attempt to download syslog certificate failed"
     rm -rf "${RSYSLOG_WORKDIR}" "${RSYSLOG_CERTS}"
-    exit 1
+    exit 0
 fi
 rm "${RSYSLOG_WORKDIR}/curl.configuration"
 
@@ -116,12 +116,12 @@ export PATH="${RSYSLOG_BIN}:${PATH}"
 if ! cat "${RSYSLOG_WORKDIR}/results" | jq -e -r .ca > "${RSYSLOG_CERTS}/ca.crt"; then
     echo "Registry response does not include a CA certificate"
     rm -rf "${RSYSLOG_WORKDIR}" "${RSYSLOG_CERTS}"
-    exit 1
+    exit 0
 fi
 if ! cat "${RSYSLOG_WORKDIR}/results" | jq -e -r .certificate > "${RSYSLOG_CERTS}/tls.crt"; then
     echo "Registry response does not include a certificate"
     rm -rf "${RSYSLOG_WORKDIR}" "${RSYSLOG_CERTS}"
-    exit 1
+    exit 0
 fi
 rm "${RSYSLOG_WORKDIR}/results"
 
