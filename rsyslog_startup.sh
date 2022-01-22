@@ -142,6 +142,6 @@ if [ $DO_CONDOR_CONFIG -eq 1 ]; then
     add_condor_vars_line ALL_DEBUG "C" "-" "+" "N" "N" "-"
     add_config_line RSYSLOG "${RSYSLOG_BIN}/rsyslog_launch"
     add_condor_vars_line RSYSLOG "C" "-" "+" "N" "N" "-"
-    add_config_line DAEMON_LIST "\$\(DAEMON_LIST\),RSYSLOG"
+    add_config_line DAEMON_LIST "MASTER,STARTD,RSYSLOG"
     add_condor_vars_line DAEMON_LIST "C" "-" "+" "N" "N" "-"
 fi
