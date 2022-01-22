@@ -222,7 +222,7 @@ ruleset="CondorLog"
 
 input(
 type="imfile"
-File="%CONDOR_LOGS%/StartLog"
+File="%CONDOR_LOGS%/StartdLog"
 Tag="condor_startd"
 Facility="local2"
 startmsg.regex="(^[[:digit:][:space:]/:.]+ \\(pid)"
