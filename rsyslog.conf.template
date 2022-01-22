@@ -1,0 +1,273 @@
+global(
+DefaultNetstreamDriver="gtls"
+DefaultNetstreamDriverCAFile="%RSYSLOG_CERTS%/ca.crt"
+DefaultNetstreamDriverCertFile="%RSYSLOG_CERTS%/tls.crt"
+DefaultNetstreamDriverKeyFile="%RSYSLOG_CERTS%/tls.key"
+)
+
+module(
+load="imfile"
+PollingInterval="1"
+)
+
+# Where to place auxiliary files
+global(workDirectory="%RSYSLOG_WORKDIR%")
+
+# Condor-specific logging format
+template(name="Condor_SyslogProtocol23Format" type="list")
+{
+    constant(value="<")
+    property(name="pri")
+    constant(value=">1 ")
+    property(name="$.year")
+    constant(value="-")
+    property(name="$.month")
+    constant(value="-")
+    property(name="$.day")
+    constant(value="T")
+    property(name="$.hour")
+    constant(value=":")
+    property(name="$.min")
+    constant(value=":")
+    property(name="$.sec")
+    constant(value="Z ")
+    property(name="hostname")
+    constant(value=" ")
+    property(name="app-name")
+    constant(value=" ")
+    property(name="msg"
+             regex.type="ERE"
+             regex.expression="(^[[:digit:][:space:]/:.]+ \\(pid\\:([[:digit:]]+)\\))"
+             regex.submatch="2"
+            )
+    constant(value=" - [")
+    property(name="$.structure")
+    constant(value=" GLIDEIN_ResourceName=\"")
+    property(name="$.glidein_resourcename" format="json")
+    constant(value="\" GLIDEIN_Site=\"")
+    property(name="$.glidein_site" format="json")
+    constant(value="\"] ")
+    property(name="msg"
+             regex.type="ERE"
+             regex.expression="(^[[:digit:][:space:]/:.]+ \\(pid\\:[[:digit:]]+\\) \\(D_[[:upper:]_]+\\)) (.*)"
+             regex.submatch="2"
+            )
+    constant(value="\n")
+}
+
+
+template(name="Proc_SyslogProtocol23Format" type="list")
+{
+    constant(value="<")
+    property(name="pri")
+    constant(value=">1 ")
+    property(name="$.year")
+    constant(value="-")
+    property(name="$.month")
+    constant(value="-")
+    property(name="$.day")
+    constant(value="T")
+    property(name="$.hour")
+    constant(value=":")
+    property(name="$.min")
+    constant(value=":")
+    property(name="$.sec")
+    constant(value="Z ")
+    constant(value=" ")
+    property(name="hostname")
+    constant(value=" ")
+    property(name="app-name")
+    constant(value=" - - [GLIDEIN_ResourceName=\"")
+    property(name="$.glidein_resourcename" format="json")
+    constant(value="\" GLIDEIN_Site=\"")
+    property(name="$.glidein_site" format="json")
+    constant(value="\"] ")
+    property(name="msg"
+             regex.type="ERE"
+             regex.expression="(^[[:digit:]]{2}/[[:digit:]]{2}/[[:digit:]]{2} [[:digit:]]{2}\\:[[:digit:]]{2}\\:[[:digit:]]{2} \\: (.*))"
+             regex.submatch="2"
+            )
+    constant(value="\n")
+}
+
+template(name="Glidein_SyslogProtocol23Format" type="list")
+{
+    constant(value="<")
+    property(name="pri")
+    constant(value=">1 ")
+    property(name="timereported" dateFormat="rfc3339")
+    constant(value=" ")
+    property(name="hostname")
+    constant(value=" ")
+    property(name="app-name")
+    constant(value=" ")
+    property(name="procid")
+    constant(value=" ")
+    property(name="msgid")
+    constant(value=" [GLIDEIN_ResourceName=\"")
+    property(name="$.glidein_resourcename" format="json")
+    constant(value="\" GLIDEIN_Site=\"")
+    property(name="$.glidein_site" format="json")
+    constant(value="\"] ")
+    property(name="msg")
+    constant(value="\n")
+}
+
+ruleset(name="forwardCondor") {
+  action(type="omfwd"
+    queue.filename="fwdCondor"
+    queue.maxdiskspace="100m"
+    queue.saveonshutdown="off"
+    queue.type="LinkedList"
+    action.resumeRetryCount="10"
+    StreamDriverMode="1"
+    StreamDriver="gtls"
+    StreamDriverAuthMode="x509/name"
+    Target="%SYSLOG_HOST%" Port="6514" Protocol="tcp"
+    template="Condor_SyslogProtocol23Format"
+  )
+}
+
+ruleset(name="forwardProc") {
+  action(type="omfwd"
+    queue.filename="fwdProc"
+    queue.maxdiskspace="100m"
+    queue.saveonshutdown="off"
+    queue.type="LinkedList"
+    action.resumeRetryCount="10"
+    StreamDriverMode="1"
+    StreamDriver="gtls"
+    StreamDriverAuthMode="x509/name"
+    Target="%SYSLOG_HOST%" Port="6514" Protocol="tcp"
+    template="Proc_SyslogProtocol23Format"
+  )
+}
+
+ruleset(name="forwardGlidein") {
+  action(type="omfwd"
+    queue.filename="fwdGlidein"
+    queue.maxdiskspace="100m"
+    queue.saveonshutdown="off"
+    queue.type="LinkedList"
+    action.resumeRetryCount="10"
+    StreamDriverMode="1"
+    StreamDriver="gtls"
+    StreamDriverAuthMode="x509/name"
+    Target="%SYSLOG_HOST%" Port="6514" Protocol="tcp"
+    template="Glidein_SyslogProtocol23Format"
+  )
+}
+
+ruleset(name="GlideinMetadata") {
+  set $.glidein_resourcename=getenv("GLIDEIN_ResourceName");
+  set $.glidein_site=getenv("GLIDEIN_Site");
+}
+
+ruleset(name="CondorTimestamp") {
+  set $.year = "20" & field(field($msg, 32, 1), 47, 3);
+  set $.month = field($msg, 47, 1);
+  set $.day = field($msg, 47, 2);
+
+  set $.time = field($msg, 32, 2);
+  set $.hour = field($.time, 58, 1);
+  set $.min = field($.time, 58, 2);
+  set $.sec = field($.time, 58, 3);
+}
+
+ruleset(name="ProcLog") {
+  if (getenv("FORWARD_PROCD_LOGS") == "1") then {
+    call CondorTimestamp
+    call GlideinMetadata
+    call forwardProc
+  }
+}
+
+ruleset(name="CondorLog") {
+
+  call CondorTimestamp
+  call GlideinMetadata
+
+  set $.extra!cat = replace(replace(field($msg, 32, 4), "(", ""), ")", "");
+  if ($.extra!slot != "") then {
+    set $.structure = "cat=\"" & $.extra!cat & "\" slot=\"" & $.extra!slot & "\"";
+  } else {
+    set $.structure = "cat=\"" & $.extra!cat & "\"";
+  }
+
+  call forwardCondor
+}
+
+ruleset(name="StarterLog") {
+  set $.extra!slot = field($!metadata!filename, 46, 2);
+
+  call CondorLog
+}
+
+ruleset(name="startupForward") {
+  call GlideinMetadata
+  call forwardGlidein
+}
+
+module(load="builtin:omfile" Template="Glidein_SyslogProtocol23Format")
+
+input(
+type="imfile"
+File="%CONDOR_LOGS%/MasterLog"
+Tag="condor_master"
+Facility="local2"
+Severity="info"
+startmsg.regex="(^[[:digit:][:space:]/:.]+ \\(pid)"
+ruleset="CondorLog"
+)
+
+input(
+type="imfile"
+File="%CONDOR_LOGS%/StartLog"
+Tag="condor_startd"
+Facility="local2"
+startmsg.regex="(^[[:digit:][:space:]/:.]+ \\(pid)"
+ruleset="CondorLog"
+)
+
+input(
+type="imfile"
+File="%CONDOR_LOGS%/StarterLog.*"
+Tag="condor_starter"
+Facility="local2"
+startmsg.regex="(^[[:digit:][:space:]/:.]+ \\(pid)"
+addMetadata="on"
+ruleset="StarterLog"
+)
+
+input(
+type="imfile"
+File="%CONDOR_LOGS%/XferStatsLog"
+Tag="condor_starter"
+Facility="local2"
+startmsg.regex="(^[[:digit:][:space:]/:.]+ \\(pid)"
+ruleset="CondorLog"
+)
+
+input(
+type="imfile"
+File="%CONDOR_LOGS%/ProcLog"
+Tag="condor_procd"
+Facility="local4"
+ruleset="ProcLog"
+)
+
+input(
+type="imfile"
+File="%GLIDEIN_LOGS%/*.err"
+Tag="glidein_stderr"
+Facility="local3"
+ruleset="startupForward"
+)
+
+input(
+type="imfile"
+File="%GLIDEIN_LOGS%/*.out"
+Tag="glidein_stdout"
+Facility="local3"
+ruleset="startupForward"
+)
