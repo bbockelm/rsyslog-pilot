@@ -64,6 +64,10 @@ if [[ "x${IDTOKEN_FILE}" == "x" ]]; then
     exit 0
 fi
 
+# If we made it here, there's an IDTOKEN available for the pilot.
+# Do a good deed and remove the proxy that made it.
+rm ticket/myproxy
+
 set +x
 IDTOKEN=$(cat "${IDTOKEN_FILE}")
 set -x
