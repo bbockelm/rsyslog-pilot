@@ -46,6 +46,8 @@ template(name="Condor_SyslogProtocol23Format" type="list")
     property(name="$.glidein_resourcename" format="json")
     constant(value="\" GLIDEIN_Site=\"")
     property(name="$.glidein_site" format="json")
+    constant(value="\" GLIDEIN_Name=\"")
+    property(name="$.glidein_name" format="json")
     constant(value="\"] ")
     property(name="msg"
              regex.type="ERE"
@@ -81,6 +83,8 @@ template(name="Proc_SyslogProtocol23Format" type="list")
     property(name="$.glidein_resourcename" format="json")
     constant(value="\" GLIDEIN_Site=\"")
     property(name="$.glidein_site" format="json")
+    constant(value="\" GLIDEIN_Name=\"")
+    property(name="$.glidein_name" format="json")
     constant(value="\"] ")
     property(name="msg"
              regex.type="ERE"
@@ -108,6 +112,8 @@ template(name="Glidein_SyslogProtocol23Format" type="list")
     property(name="$.glidein_resourcename" format="json")
     constant(value="\" GLIDEIN_Site=\"")
     property(name="$.glidein_site" format="json")
+    constant(value="\" GLIDEIN_Name=\"")
+    property(name="$.glidein_name" format="json")
     constant(value="\"] ")
     property(name="msg")
     constant(value="\n")
@@ -161,6 +167,7 @@ ruleset(name="forwardGlidein") {
 ruleset(name="GlideinMetadata") {
   set $.glidein_resourcename=getenv("GLIDEIN_ResourceName");
   set $.glidein_site=getenv("GLIDEIN_Site");
+  set $.glidein_name=getenv("GLIDEIN_Name");
 }
 
 ruleset(name="CondorTimestamp") {
