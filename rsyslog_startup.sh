@@ -94,8 +94,6 @@ cat rsyslog/rsyslog.conf.template | \
         -e "s|%SYSLOG_HOST%|${SYSLOG_HOST}|" \
     > "${RSYSLOG_CONF}/rsyslog.conf"
 
-export LD_LIBRARY_PATH="${RSYSLOG_LIB}:${LD_LIBRARY_PATH}"
-
 umask 077
 cat > "${RSYSLOG_WORKDIR}/curl.configuration" << EOF
 -X POST
@@ -134,10 +132,11 @@ cat > "${RSYSLOG_BIN}/rsyslog_launch" << EOF
 export RSYSLOG_MODDIR="${RSYSLOG_LIB}"
 export GLIDEIN_Site="${GLIDEIN_Site}"
 export GLIDEIN_ResourceName="${GLIDEIN_ResourceName}"
-export LD_LIBRARY_PATH="${RSYSLOG_LIB}:\${LD_LIBRARY_PATH}"
 export PATH="$(readlink -f main/condor/usr/bin):${PATH}"
 export GLIDEIN_Name="\$(condor_config_val MASTER_NAME)"
-exec "$RSYSLOG_BIN/rsyslogd" -n -i "$(readlink -f rsyslog/rsyslog.pid)" -f "$RSYSLOG_CONF/rsyslog.conf" "\$@"
+export RSYSLOG_PID="$(readlink -f rsyslog/rsyslog.pid)"
+export LD_LIBRARY_PATH="${RSYSLOG_LIB}:\${LD_LIBRARY_PATH}"
+exec "$RSYSLOG_BIN/rsyslogd" -n -i "\${RSYSLOG_PID}" -f "$RSYSLOG_CONF/rsyslog.conf" "\$@"
 EOF
 chmod 0700 "${RSYSLOG_BIN}/rsyslog_launch"
 
