@@ -21,8 +21,7 @@ copy_deps () {
   done
 }
 
-cp "$(command -v jq)" "$DESTDIR/bin"
-copy_deps "$DESTDIR/bin/jq"
+cp "$(dirname "$0")/jq-linux64" "$DESTDIR/bin/jq"
 
 cp "$(command -v rsyslogd)" "$DESTDIR/bin"
 copy_deps "$DESTDIR/bin/rsyslogd"
