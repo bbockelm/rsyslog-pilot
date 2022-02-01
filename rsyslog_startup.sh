@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 
 if [ ! -e rsyslog ]; then
     echo "rsyslog bootstrap directory missing; skipping log uploads"
