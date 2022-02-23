@@ -13,6 +13,9 @@ PollingInterval="1"
 # Where to place auxiliary files
 global(workDirectory="%RSYSLOG_WORKDIR%")
 
+# Filter out error caused by pilot trying to decode a grid proxy as a JWT (note '~' at the end)
+:msg, regex, ".*Failed to decode JWT in keyfile.*/ticket/myproxy.*ignoring.*"  ~
+
 # Condor-specific logging format
 template(name="Condor_SyslogProtocol23Format" type="list")
 {
