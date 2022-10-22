@@ -16,7 +16,7 @@ cleanup_temp() {
 trap cleanup_temp EXIT
 
 copy_deps () {
-  for dependency in $(ldd "$1" | egrep -v 'linux-vdso|libz|libpthread|libdl|librt|libgcc_s|libx|ld-linux' | awk '{print $3;}'); do
+  for dependency in $(ldd "$1" | egrep -v 'linux-vdso|libz|libpthread|libdl|librt|libgcc_s|libx|ld-linux|libc' | awk '{print $3;}'); do
     cp "$dependency" "$DESTDIR/lib/"
   done
 }
